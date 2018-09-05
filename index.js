@@ -1,13 +1,29 @@
-const fs = require('fs');
-const jsdom = require('jsdom');
+const rp = require('request-promise');
 
-const page = fs.readFileSync('./sample-page.html', 'UTF-8');
+async function getMpegUrl(sourceUrl) {
+    const response = await rp.get(sourceUrl);
+    const page = response;
 
-const dom = new jsdom.JSDOM(page);
-const iframeSrc = dom.window.document.querySelector('#mcode_block iframe').src;
+    const [, type, token] = /http:\/\/cdn\.ex-fs\.net\/(\w+)\/([a-zA-Z0-9]+)\/iframe.*/ig.exec(page);
 
-const groups = /http:\/\/cdn\.ex-fs\.net\/(\w+)\/([a-zA-Z0-9]+)\/iframe/ig.exec(iframeSrc);
-const [, type, token]  = groups;
+    const iframeUrl = `http://cdn.ex-fs.net/${type}/${token}/iframe`;
 
-const url = `http://cdn.ex-fs.net/${type}/${token}/iframe`;
-console.log(url);
+    const mpegUrl = await rp.get(iframeUrl, {
+        followRedirect: false,
+    }).then(result => {
+        throw new Error('Got unexpected result', result);
+    }).catch(result => {
+        if (result.statusCode === 302) {
+            return result.response.headers.location;
+        }
+
+        throw result;
+    });
+
+    return mpegUrl;
+}
+
+getMpegUrl('http://ex-fs.net/series/85544-zateryannye-v-kosmose.html')
+    .then(url => {
+        console.log(url);
+    });

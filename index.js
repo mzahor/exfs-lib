@@ -1,4 +1,6 @@
+#!/usr/bin/env node
 const rp = require('request-promise');
+const yargs = require('yargs');
 
 async function getMpegUrl(sourceUrl) {
     const response = await rp.get(sourceUrl);
@@ -23,7 +25,16 @@ async function getMpegUrl(sourceUrl) {
     return mpegUrl;
 }
 
-getMpegUrl('http://ex-fs.net/series/85544-zateryannye-v-kosmose.html')
+const argv = yargs
+    .usage('Usage: $0 url')
+    .alias('u', 'url')
+    .describe('u', 'url to generate playback url for')
+    .demandOption(['u'])
+    .help('h')
+    .alias('h', 'help')
+    .argv;
+
+getMpegUrl(argv.url)
     .then(url => {
         console.log(url);
     });
